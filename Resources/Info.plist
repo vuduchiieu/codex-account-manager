@@ -5,8 +5,8 @@
     <key>CFBundleExecutable</key><string>codex-account-manager</string>
     <key>CFBundleIdentifier</key><string>com.example.codex-account-manager</string>
     <key>CFBundleIconFile</key><string>codex-account-manager-icon</string>
-    <key>CFBundleName</key><string>codex-account-manager</string>
-    <key>CFBundleDisplayName</key><string>codex-account-manager</string>
+    <key>CFBundleName</key><string>Codex Account Manager</string>
+    <key>CFBundleDisplayName</key><string>Codex Account Manager</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleDevelopmentRegion</key><string>en</string>
     <key>CFBundleLocalizations</key>

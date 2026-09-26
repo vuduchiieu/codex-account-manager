@@ -57,7 +57,7 @@ actor CodexAppServerClient {
 
     func initialize(version: String) async throws {
         _ = try await request(method: "initialize", params: .object([
-            "clientInfo": .object(["name": .string("codex-account-manager"), "title": .string("codex-account-manager"), "version": .string(version)]),
+            "clientInfo": .object(["name": .string("codex-account-manager"), "title": .string("Codex Account Manager"), "version": .string(version)]),
             "capabilities": .object(["experimentalApi": .bool(true)]),
         ]), timeout: 15)
         try sendNotification(method: "initialized", params: nil)

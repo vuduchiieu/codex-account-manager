@@ -15,7 +15,10 @@ struct AccountRowView: View {
                     model.setActive(account.id)
                 } label: {
                     Group {
-                        if account.isActive {
+                        if isSwitching {
+                            ProgressView()
+                                .controlSize(.mini)
+                        } else if account.isActive {
                             ZStack {
                                 Circle().fill(activeGreen)
                                 Image(systemName: "checkmark")
@@ -33,7 +36,7 @@ struct AccountRowView: View {
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
-                .allowsHitTesting(!account.isActive && !isProcessing)
+                .allowsHitTesting(model.switchingAccountID == nil && !account.isActive && !isProcessing)
                 .accessibilityLabel(localization.text(account.isActive ? "active" : "switch_account"))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(account.email ?? localization.text("unknown_email"))
@@ -46,7 +49,7 @@ struct AccountRowView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Spacer(minLength: 12)
-                if isProcessing {
+                if isProcessing && !isSwitching {
                     HStack(spacing: 5) {
                         ProgressView().controlSize(.mini)
                         Text(localization.text("refreshing"))
@@ -95,6 +98,10 @@ struct AccountRowView: View {
 
     private var isProcessing: Bool {
         isRefreshing || model.processingIDs.contains(account.id)
+    }
+
+    private var isSwitching: Bool {
+        model.switchingAccountID == account.id
     }
 
     @ViewBuilder private var quotaContent: some View {
@@ -224,9 +231,7 @@ struct AccountRowView: View {
     }
 
     private var activeGreen: Color {
-        colorScheme == .dark
-            ? Color(red: 0.16, green: 0.84, blue: 0.39)
-            : Color(red: 0.00, green: 0.52, blue: 0.22)
+        .accentColor
     }
 
     private var healthyGreen: Color {

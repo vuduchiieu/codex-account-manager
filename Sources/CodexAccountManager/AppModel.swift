@@ -28,6 +28,7 @@ final class AppModel {
     var loginMessageKey: String?
     var refreshingIDs: Set<UUID> = []
     var processingIDs: Set<UUID> = []
+    var switchingAccountID: UUID?
     var externalAccountDetected = false
 
     private let store: AccountStore
@@ -254,10 +255,17 @@ final class AppModel {
     }
 
     func setActive(_ id: UUID) {
-        guard !processingIDs.contains(id) else { return }
+        guard switchingAccountID == nil,
+              !processingIDs.contains(id),
+              let account = accounts.first(where: { $0.id == id }),
+              !account.isActive else { return }
+        switchingAccountID = id
         processingIDs.insert(id)
         Task {
-            defer { processingIDs.remove(id) }
+            defer {
+                processingIDs.remove(id)
+                if switchingAccountID == id { switchingAccountID = nil }
+            }
             do { try await activate(id) } catch { show(error) }
         }
     }
@@ -519,7 +527,7 @@ final class AppModel {
 
     private func showMessage(_ message: String) {
         NativeErrorAlert.show(
-            title: "codex-account-manager",
+            title: "Codex Account Manager",
             message: message,
             closeTitle: L10n.text("close")
         )

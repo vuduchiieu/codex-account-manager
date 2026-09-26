@@ -36,12 +36,12 @@ final class StatusBarController: NSObject {
         if let button = statusItem.button {
             let image = Bundle.main.url(forResource: "codex-account-manager-status-icon", withExtension: "svg")
                 .flatMap(NSImage.init(contentsOf:))
-                ?? NSImage(systemSymbolName: "person.2.fill", accessibilityDescription: "codex-account-manager")
+                ?? NSImage(systemSymbolName: "person.2.fill", accessibilityDescription: "Codex Account Manager")
             image?.isTemplate = true
             image?.size = NSSize(width: 18, height: 18)
             button.image = image
             button.imageScaling = .scaleProportionallyDown
-            button.toolTip = "codex-account-manager"
+            button.toolTip = "Codex Account Manager"
             button.target = self
             button.action = #selector(handleStatusItemClick)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -88,7 +88,7 @@ final class StatusBarController: NSObject {
     }
 
     private func showQuickActions() {
-        let menu = NSMenu(title: "codex-account-manager")
+        let menu = NSMenu(title: "Codex Account Manager")
         menu.autoenablesItems = false
         menu.font = NSFont.menuFont(ofSize: 12)
         menu.addItem(menuItem(L10n.text("add_account"), action: #selector(addAccount), enabled: canAddAccount))

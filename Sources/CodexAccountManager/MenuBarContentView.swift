@@ -15,7 +15,7 @@ struct MenuBarContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("codex-account-manager")
+                Text("Codex Account Manager")
                     .font(.headline.weight(.semibold))
                 Spacer()
                 Button(action: onOpenSettings) {

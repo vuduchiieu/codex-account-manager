@@ -22,9 +22,12 @@ final class SettingsWindowController {
         let hostingController = NSHostingController(rootView: SettingsWindowView(model: model))
         let window = NSWindow(contentViewController: hostingController)
         window.title = L10n.text("settings")
-        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
-        window.setContentSize(NSSize(width: 760, height: 540))
-        window.minSize = NSSize(width: 640, height: 440)
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = true
+        window.setContentSize(NSSize(width: 800, height: 560))
+        window.minSize = NSSize(width: 680, height: 460)
         window.isReleasedWhenClosed = false
         window.center()
 
@@ -64,26 +67,69 @@ private struct SettingsWindowView: View {
 
     var body: some View {
         settingsNavigation
-            .frame(minWidth: 640, minHeight: 440)
-            .navigationTitle(localization.text("settings"))
+            .frame(minWidth: 680, minHeight: 460)
             .onAppear { model.menuOpened() }
     }
 
     private var settingsNavigation: some View {
         NavigationSplitView {
-            List(SettingsSection.allCases, selection: $selection) { section in
-                Label(section.title(localization), systemImage: section.icon)
-                    .tag(section)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(localization.text("settings"))
+                    .font(.title2.weight(.bold))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 14)
+
+                VStack(spacing: 4) {
+                    ForEach(SettingsSection.allCases) { section in
+                        Button {
+                            selection = section
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: section.icon)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(.primary)
+                                    .frame(width: 20)
+                                Text(section.title(localization))
+                                    .foregroundStyle(.primary)
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 10)
+                            .frame(height: 34)
+                            .background {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(selection == section ? Color.primary.opacity(0.10) : .clear)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .focusable(false)
+                    }
+                }
+                .padding(.horizontal, 8)
+
+                Spacer()
+
+                Text("Codex Account Manager")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .padding(16)
             }
-            .navigationSplitViewColumnWidth(min: 150, ideal: 170)
+            .padding(.top, 48)
+            .background(.ultraThinMaterial)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 220)
         } detail: {
-            switch selection ?? .accounts {
-            case .accounts:
-                AccountManagementSettingsView(model: model)
-            case .general:
-                GeneralSettingsView(model: model)
+            ZStack {
+                Color(nsColor: .windowBackgroundColor)
+                    .ignoresSafeArea()
+                switch selection ?? .accounts {
+                case .accounts:
+                    AccountManagementSettingsView(model: model)
+                case .general:
+                    GeneralSettingsView(model: model)
+                }
             }
         }
+        .navigationSplitViewStyle(.balanced)
     }
 }
 
@@ -94,28 +140,30 @@ private struct AccountManagementSettingsView: View {
     @State private var hoveredAccountID: UUID?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(localization.text("manage_accounts"))
-                        .font(.title2.weight(.semibold))
+        VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(localization.text("manage_accounts"))
+                    .font(.largeTitle.weight(.bold))
+                    .lineLimit(1)
+
+                HStack(alignment: .center, spacing: 10) {
                     Text(localization.format("account_count", model.accounts.count))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    Spacer()
+                    SettingsActionButton(
+                        title: localization.text("import_current"),
+                        icon: "square.and.arrow.down",
+                        isDisabled: model.state.codexBinaryPath == nil || !model.canImportCurrentAccount || model.isImportingAccount,
+                        action: model.importCurrentAccount
+                    )
+                    SettingsActionButton(
+                        title: localization.text("add_account"),
+                        icon: "plus",
+                        isDisabled: model.state.codexBinaryPath == nil || model.isAddingAccount,
+                        action: model.addAccount
+                    )
                 }
-                Spacer()
-                SettingsActionButton(
-                    title: localization.text("import_current"),
-                    icon: "square.and.arrow.down",
-                    isDisabled: model.state.codexBinaryPath == nil || !model.canImportCurrentAccount || model.isImportingAccount,
-                    action: model.importCurrentAccount
-                )
-                SettingsActionButton(
-                    title: localization.text("add_account"),
-                    icon: "plus",
-                    isDisabled: model.state.codexBinaryPath == nil || model.isAddingAccount,
-                    action: model.addAccount
-                )
             }
 
             if model.state.codexBinaryPath == nil {
@@ -131,8 +179,9 @@ private struct AccountManagementSettingsView: View {
                     description: Text(localization.text("no_accounts_description"))
                 )
             } else {
-                List {
-                    ForEach(model.accounts) { account in
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(model.accounts.enumerated()), id: \.element.id) { index, account in
                         SettingsAccountRow(
                             account: account,
                             isProcessing: model.processingIDs.contains(account.id),
@@ -161,12 +210,30 @@ private struct AccountManagementSettingsView: View {
                                     .padding(.horizontal, 10)
                             }
                         }
+
+                            if index < model.accounts.count - 1 {
+                                Divider()
+                                    .padding(.leading, 48)
+                            }
+                        }
                     }
                 }
-                .listStyle(.inset)
+                .frame(height: min(CGFloat(model.accounts.count) * 62, 372))
+                .background(
+                    Color(nsColor: .controlBackgroundColor),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color(nsColor: .separatorColor).opacity(0.6), lineWidth: 0.5)
+                }
             }
+
+            Spacer(minLength: 0)
         }
-        .padding(24)
+        .padding(.horizontal, 28)
+        .padding(.top, 48)
+        .padding(.bottom, 24)
     }
 
     private func insertionIndicatorAlignment(for destinationID: UUID) -> Alignment {
@@ -203,12 +270,20 @@ private struct SettingsAccountRow: View {
             Button {
                 model.setActive(account.id)
             } label: {
-                Image(systemName: account.isActive ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(account.isActive ? .green : .secondary)
-                    .font(.title3)
+                Group {
+                    if model.switchingAccountID == account.id {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: account.isActive ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(account.isActive ? Color.accentColor : Color.secondary)
+                            .font(.title3)
+                    }
+                }
+                .frame(width: 18, height: 18)
             }
             .buttonStyle(.plain)
-            .disabled(account.isActive || isProcessing)
+            .allowsHitTesting(model.switchingAccountID == nil && !account.isActive && !isProcessing)
             .focusable(false)
             .accessibilityLabel(localization.text(account.isActive ? "active" : "switch_account"))
 
@@ -227,15 +302,18 @@ private struct SettingsAccountRow: View {
             } else {
                 Button(role: .destructive, action: onDelete) {
                     Image(systemName: "trash")
+                        .foregroundStyle(.primary)
                 }
+                .buttonStyle(.borderless)
                 .focusable(false)
                 .accessibilityLabel(localization.text("delete"))
             }
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 14)
+        .frame(height: 61)
         .contentShape(Rectangle())
         .onDrag(onBeginDrag) {
-            AccountDragPreview(account: account, activeGreen: .green)
+            AccountDragPreview(account: account, activeGreen: .accentColor)
         }
     }
 }
@@ -245,59 +323,89 @@ private struct GeneralSettingsView: View {
     @State private var localization = LocalizationManager.shared
 
     var body: some View {
-        Form {
-            Section(localization.text("codex_cli")) {
-                LabeledContent(localization.text("binary_path")) {
-                    Text(model.state.codexBinaryPath ?? localization.text("not_configured"))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .foregroundStyle(model.state.codexBinaryPath == nil ? .secondary : .primary)
-                }
-                SettingsActionButton(
-                    title: localization.text("choose_binary"),
-                    icon: "folder",
-                    isDisabled: false,
-                    action: model.chooseBinary
-                )
-            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                Text(localization.text("general"))
+                    .font(.largeTitle.weight(.bold))
 
-            Section(localization.text("app_preferences")) {
-                Picker(
-                    localization.text("language"),
-                    selection: Binding(
-                        get: { model.languageOverride },
-                        set: { model.setLanguageOverride($0) }
-                    )
-                ) {
-                    Text(localization.text("language_system"))
-                        .tag(nil as AppLanguage?)
-                    ForEach(AppLanguage.allCases) { language in
-                        Text(languageName(language))
-                            .tag(language as AppLanguage?)
+                SettingsGroup(title: localization.text("codex_cli")) {
+                    HStack(spacing: 14) {
+                        SettingsRowIcon(systemName: "terminal")
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(localization.text("binary_path"))
+                            Text(model.state.codexBinaryPath ?? localization.text("not_configured"))
+                                .font(.caption)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 12)
+                        SettingsActionButton(
+                            title: localization.text("choose_binary"),
+                            icon: "folder",
+                            isDisabled: false,
+                            action: model.chooseBinary
+                        )
+                    }
+                    .padding(.horizontal, 16)
+                    .frame(minHeight: 64)
+                }
+
+                SettingsGroup(title: localization.text("app_preferences")) {
+                    SettingsPreferenceRow(icon: "globe", title: localization.text("language")) {
+                        Picker(
+                            "",
+                            selection: Binding(
+                                get: { model.languageOverride },
+                                set: { model.setLanguageOverride($0) }
+                            )
+                        ) {
+                            Text(localization.text("language_system"))
+                                .tag(nil as AppLanguage?)
+                            ForEach(AppLanguage.allCases) { language in
+                                Text(languageName(language))
+                                    .tag(language as AppLanguage?)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 170)
+                    }
+
+                    Divider().padding(.leading, 50)
+
+                    SettingsPreferenceRow(icon: "power", title: localization.text("launch_at_login")) {
+                        Toggle(
+                            "",
+                            isOn: Binding(
+                                get: { model.state.launchAtLogin },
+                                set: { model.setLaunchAtLogin($0) }
+                            )
+                        )
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .focusable(false)
+                    }
+
+                    Divider().padding(.leading, 50)
+
+                    SettingsPreferenceRow(icon: "bell", title: localization.text("quota_reset_notifications")) {
+                        Toggle(
+                            "",
+                            isOn: Binding(
+                                get: { model.quotaResetNotificationsEnabled },
+                                set: { model.setQuotaResetNotificationsEnabled($0) }
+                            )
+                        )
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .focusable(false)
                     }
                 }
-
-                Toggle(
-                    localization.text("launch_at_login"),
-                    isOn: Binding(
-                        get: { model.state.launchAtLogin },
-                        set: { model.setLaunchAtLogin($0) }
-                    )
-                )
-                .focusable(false)
-
-                Toggle(
-                    localization.text("quota_reset_notifications"),
-                    isOn: Binding(
-                        get: { model.quotaResetNotificationsEnabled },
-                        set: { model.setQuotaResetNotificationsEnabled($0) }
-                    )
-                )
-                .focusable(false)
             }
+            .padding(.horizontal, 28)
+            .padding(.top, 48)
+            .padding(.bottom, 28)
         }
-        .formStyle(.grouped)
-        .padding(24)
     }
 
     private func languageName(_ language: AppLanguage) -> String {
@@ -307,6 +415,57 @@ private struct GeneralSettingsView: View {
         case .japanese: localization.text("language_japanese")
         case .chinese: localization.text("language_chinese")
         }
+    }
+}
+
+private struct SettingsGroup<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 4)
+            VStack(spacing: 0) { content }
+                .background(
+                    Color(nsColor: .controlBackgroundColor),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color(nsColor: .separatorColor).opacity(0.6), lineWidth: 0.5)
+                }
+        }
+    }
+}
+
+private struct SettingsRowIcon: View {
+    let systemName: String
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(.primary)
+            .frame(width: 20)
+    }
+}
+
+private struct SettingsPreferenceRow<Trailing: View>: View {
+    let icon: String
+    let title: String
+    @ViewBuilder let trailing: Trailing
+
+    var body: some View {
+        HStack(spacing: 14) {
+            SettingsRowIcon(systemName: icon)
+            Text(title)
+            Spacer(minLength: 12)
+            trailing
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 52)
     }
 }
 

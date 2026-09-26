@@ -31,4 +31,19 @@ struct ResetTimeTextTests {
         #expect(ResetTimeText.format(resetAt: reset, now: now, language: .japanese, timeZone: utc) == "6日0時間後にリセット")
         #expect(ResetTimeText.format(resetAt: reset, now: now, language: .chinese, timeZone: utc) == "6天0小时后重置")
     }
+
+    @Test func advancesExpiredWindowsToTheNextCycle() {
+        let reset = now.addingTimeInterval(-2 * 60)
+        var usage = CodexUsageSnapshot(
+            fiveHour: UsageWindow(usedPercent: 100, windowDurationMinutes: 300, resetsAt: reset),
+            weekly: UsageWindow(usedPercent: 16, windowDurationMinutes: 10_080, resetsAt: reset)
+        )
+
+        let advanced = usage.advanceExpiredWindows(now: now)
+        #expect(advanced)
+        #expect(usage.fiveHour?.remainingPercent == 100)
+        #expect(usage.weekly?.remainingPercent == 100)
+        #expect(usage.fiveHour?.resetsAt == now.addingTimeInterval(4 * 60 * 60 + 58 * 60))
+        #expect(usage.weekly?.resetsAt == now.addingTimeInterval(7 * 86_400 - 2 * 60))
+    }
 }

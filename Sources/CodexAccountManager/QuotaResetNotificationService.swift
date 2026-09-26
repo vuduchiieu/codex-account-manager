@@ -89,6 +89,48 @@ final class QuotaResetNotificationService: NSObject, UNUserNotificationCenterDel
         center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
     }
 
+    func scheduleResetNotifications(
+        accounts: [CodexAccount],
+        enabled: Bool,
+        language: AppLanguage,
+        now: Date = Date()
+    ) {
+        center.removeAllPendingNotificationRequests()
+        guard enabled else { return }
+
+        for account in accounts {
+            scheduleResetNotification(account: account, kind: .fiveHour, window: account.usage?.fiveHour,
+                                      language: language, now: now)
+            scheduleResetNotification(account: account, kind: .weekly, window: account.usage?.weekly,
+                                      language: language, now: now)
+        }
+    }
+
+    private func scheduleResetNotification(
+        account: CodexAccount,
+        kind: QuotaResetKind,
+        window: UsageWindow?,
+        language: AppLanguage,
+        now: Date
+    ) {
+        guard let resetAt = window?.resetsAt else { return }
+        let interval = resetAt.timeIntervalSince(now)
+        guard interval > 0 else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = L10n.text("quota_reset_title", language: language)
+        content.body = L10n.format(
+            "quota_reset_message",
+            language: language,
+            arguments: [account.email ?? account.displayName, kind.localizedName(language: language)]
+        )
+        content.sound = .default
+
+        let identifier = "quota-reset-scheduled-\(account.id.uuidString)-\(kind.rawValue)"
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+        center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
+    }
+
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,

@@ -42,6 +42,7 @@ final class AppModel {
     private var loginClient: CodexAppServerClient?
     private var loginID: String?
     private var activityMonitor: CodexActivityMonitor?
+    private var quotaResetTask: Task<Void, Never>?
 
     init(store: AccountStore = AccountStore()) {
         self.store = store
@@ -76,6 +77,7 @@ final class AppModel {
         state.launchAtLogin = launchService.isEnabled
         await resolveBinary()
         await reconcileActiveAccount()
+        await advanceExpiredQuotaWindows()
         isLoading = false
         if !accounts.isEmpty, quotaResetNotificationsEnabled {
             quotaResetNotificationService.requestAuthorization()
@@ -150,6 +152,7 @@ final class AppModel {
                     if isFirst { state.activeAccountId = id }
                     state.defaultAuthModificationDate = authModificationDate()
                     try await persist()
+                    scheduleQuotaResetHandling()
                 } catch { try? await store.removeProfile(named: id.uuidString); throw error }
             } catch { show(error) }
         }
@@ -180,6 +183,7 @@ final class AppModel {
                         quotaResetNotificationService.requestAuthorization()
                     }
                     try await persist()
+                    scheduleQuotaResetHandling()
                 } catch { try? await store.removeProfile(named: id.uuidString); throw error }
             } catch is CancellationError {
             } catch { show(error) }
@@ -220,6 +224,7 @@ final class AppModel {
                     accounts[index].lastError = result.usage == nil
                         ? AccountRefreshError(kind: .usageUnavailable, message: L10n.text("usage_unavailable")) : nil
                     try await persist()
+                    scheduleQuotaResetHandling()
                     for kind in resetKinds where quotaResetNotificationsEnabled {
                         let resetDate = kind == .fiveHour
                             ? result.usage?.fiveHour?.resetsAt
@@ -295,6 +300,7 @@ final class AppModel {
                 state.activeAccountId = accounts.first(where: \.isActive)?.id
             }
             try? await persist()
+            scheduleQuotaResetHandling()
         }
     }
 
@@ -310,6 +316,7 @@ final class AppModel {
     func setQuotaResetNotificationsEnabled(_ enabled: Bool) {
         state.quotaResetNotificationsEnabled = enabled
         if enabled { quotaResetNotificationService.requestAuthorization() }
+        scheduleQuotaResetHandling()
         Task { try? await persist() }
     }
 
@@ -358,6 +365,8 @@ final class AppModel {
         state.defaultAuthModificationDate = date
         externalAccountDetected = false
         try await persist()
+        scheduleQuotaResetHandling()
+        refresh(id)
         try await codexDesktopRelaunchService.relaunchIfRunning()
     }
 
@@ -440,6 +449,46 @@ final class AppModel {
 
     private func authModificationDate() -> Date? {
         try? defaultAuthURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+    }
+
+    private func advanceExpiredQuotaWindows(now: Date = Date()) async {
+        var changed = false
+        for index in accounts.indices {
+            guard var usage = accounts[index].usage else { continue }
+            if usage.advanceExpiredWindows(now: now) {
+                accounts[index].usage = usage
+                changed = true
+            }
+        }
+        if changed { try? await persist() }
+        scheduleQuotaResetHandling()
+    }
+
+    private func scheduleQuotaResetHandling() {
+        quotaResetNotificationService.scheduleResetNotifications(
+            accounts: accounts,
+            enabled: quotaResetNotificationsEnabled,
+            language: LocalizationManager.shared.language
+        )
+
+        quotaResetTask?.cancel()
+        let now = Date()
+        let nextReset = accounts
+            .flatMap { account in [account.usage?.fiveHour?.resetsAt, account.usage?.weekly?.resetsAt] }
+            .compactMap { $0 }
+            .filter { $0 > now }
+            .min()
+        guard let nextReset else { return }
+
+        quotaResetTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .seconds(nextReset.timeIntervalSinceNow))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            await self?.advanceExpiredQuotaWindows()
+        }
     }
 
     private func persist() async throws { try await store.save(accounts: accounts, state: state) }

@@ -9,6 +9,22 @@ struct UsageWindow: Codable, Equatable, Sendable {
     var normalModelSlug: String? = nil
 
     var remainingPercent: Double { min(100, max(0, 100 - usedPercent)) }
+
+    @discardableResult
+    mutating func advanceAfterResetIfNeeded(now: Date = Date()) -> Bool {
+        guard let resetAt = resetsAt, resetAt <= now else { return false }
+
+        usedPercent = 0
+        guard let windowDurationMinutes, windowDurationMinutes > 0 else {
+            resetsAt = nil
+            return true
+        }
+
+        let duration = TimeInterval(windowDurationMinutes * 60)
+        let elapsedCycles = max(1, Int((now.timeIntervalSince(resetAt) / duration).rounded(.down)) + 1)
+        resetsAt = resetAt.addingTimeInterval(duration * Double(elapsedCycles))
+        return true
+    }
 }
 
 struct CodexUsageSnapshot: Codable, Equatable, Sendable {
@@ -19,6 +35,23 @@ struct CodexUsageSnapshot: Codable, Equatable, Sendable {
     var hasCredits: Bool?
     var unlimitedCredits: Bool?
     var sourcePlan: String?
+
+    @discardableResult
+    mutating func advanceExpiredWindows(now: Date = Date()) -> Bool {
+        var changed = false
+        if var fiveHour {
+            changed = fiveHour.advanceAfterResetIfNeeded(now: now) || changed
+            self.fiveHour = fiveHour
+        }
+        if var weekly {
+            changed = weekly.advanceAfterResetIfNeeded(now: now) || changed
+            self.weekly = weekly
+        }
+        for index in additionalWindows.indices {
+            changed = additionalWindows[index].advanceAfterResetIfNeeded(now: now) || changed
+        }
+        return changed
+    }
 }
 
 struct AccountRefreshError: Codable, Equatable, Sendable {

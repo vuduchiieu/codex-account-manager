@@ -2,9 +2,7 @@
 
 Manage multiple ChatGPT Codex accounts directly from the macOS menu bar.
 
-<p align="center">
-  <img src="Resources/preview.gif" alt="Codex Account Manager preview" />
-</p>
+<img src="Resources/preview.gif" alt="Codex Account Manager preview" />
 
 [Tiếng Việt](#tiếng-việt) · [English](#english)
 

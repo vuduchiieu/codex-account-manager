@@ -6,7 +6,12 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [.executable(name: "codex-account-manager", targets: ["CodexAccountManager"])],
     targets: [
-        .executableTarget(name: "CodexAccountManager"),
-        .testTarget(name: "CodexAccountManagerTests", dependencies: ["CodexAccountManager"], resources: [.copy("Fixtures")]),
+        .executableTarget(name: "CodexAccountManager", path: "Sources"),
+        .testTarget(
+            name: "CodexAccountManagerTests",
+            dependencies: ["CodexAccountManager"],
+            path: "Tests",
+            resources: [.copy("Fixtures")]
+        ),
     ]
 )

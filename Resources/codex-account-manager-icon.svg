@@ -5,13 +5,14 @@
       <stop offset="0.55" stop-color="#0A84FF"/>
       <stop offset="1" stop-color="#007AFF"/>
     </linearGradient>
-    <linearGradient id="mark" x1="150" y1="145" x2="365" y2="365" gradientUnits="userSpaceOnUse">
+    <linearGradient id="mark" x1="150" y1="145" x2="400" y2="390" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFFFFF"/>
       <stop offset="1" stop-color="#DCE7FF"/>
     </linearGradient>
   </defs>
   <rect x="32" y="32" width="448" height="448" rx="108" fill="url(#tile)"/>
   <rect x="35" y="35" width="442" height="442" rx="105" fill="none" stroke="#B9DCFF" stroke-opacity="0.65" stroke-width="6"/>
-  <path d="M162 154L278 256L162 358" fill="none" stroke="url(#mark)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M304 358H390" fill="none" stroke="url(#mark)" stroke-width="48" stroke-linecap="round"/>
+  <path d="M148 142L264 244L148 346" fill="none" stroke="url(#mark)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M300 320H396M396 320L372 296M396 320L372 344" fill="none" stroke="url(#mark)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M396 382H300M300 382L324 358M300 382L324 406" fill="none" stroke="url(#mark)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

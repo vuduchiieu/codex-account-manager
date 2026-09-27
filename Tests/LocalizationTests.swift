@@ -1,5 +1,5 @@
 import Testing
-@testable import CodexAccountManager
+@testable import LLMAccountSwitcher
 
 struct LocalizationTests {
     @Test func choosesFirstSupportedSystemLanguage() {

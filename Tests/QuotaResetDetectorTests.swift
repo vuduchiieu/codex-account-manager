@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import CodexAccountManager
+@testable import LLMAccountSwitcher
 
 struct QuotaResetDetectorTests {
     @Test func detectsFiveHourAndWeeklyResets() {

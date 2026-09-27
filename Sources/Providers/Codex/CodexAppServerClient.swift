@@ -19,7 +19,7 @@ actor CodexAppServerClient {
         let timeoutTask: Task<Void, Never>
     }
 
-    private let logger = Logger(subsystem: "local.codex-account-manager.app", category: "app-server")
+    private let logger = Logger(subsystem: "local.llm-account-switcher.app", category: "app-server")
     private var process: Process?
     private var input: FileHandle?
     private var outputBuffer = Data()
@@ -57,7 +57,7 @@ actor CodexAppServerClient {
 
     func initialize(version: String) async throws {
         _ = try await request(method: "initialize", params: .object([
-            "clientInfo": .object(["name": .string("codex-account-manager"), "title": .string("Codex Account Manager"), "version": .string(version)]),
+            "clientInfo": .object(["name": .string("llm-account-switcher"), "title": .string("LLM Account Switcher"), "version": .string(version)]),
             "capabilities": .object(["experimentalApi": .bool(true)]),
         ]), timeout: 15)
         try sendNotification(method: "initialized", params: nil)
@@ -102,7 +102,7 @@ actor CodexAppServerClient {
         let deadline = Date().addingTimeInterval(2)
         while process.isRunning && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
         if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-        cleanup(error: CodexAccountManagerError.message(L10n.text("app_server_stopped")))
+        cleanup(error: LLMAccountSwitcherError.message(L10n.text("app_server_stopped")))
     }
 
     private func sendNotification(method: String, params: JSONValue?) throws {
@@ -137,7 +137,7 @@ actor CodexAppServerClient {
             switch idValue { case .string(let value): id = value; case .number(let value): id = String(Int(value)); default: id = nil }
             if let id, let item = pending.removeValue(forKey: id) {
                 item.timeoutTask.cancel()
-                if let error = envelope.error { item.continuation.resume(throwing: CodexAccountManagerError.message(error.message)) }
+                if let error = envelope.error { item.continuation.resume(throwing: LLMAccountSwitcherError.message(error.message)) }
                 else { item.continuation.resume(returning: envelope.result ?? .null) }
             }
         } else if let method = envelope.method, var waiters = notificationWaiters.removeValue(forKey: method), !waiters.isEmpty {
@@ -150,19 +150,19 @@ actor CodexAppServerClient {
 
     private func timeoutRequest(id: String) {
         guard let item = pending.removeValue(forKey: id) else { return }
-        item.continuation.resume(throwing: CodexAccountManagerError.message(L10n.text("app_server_no_response")))
+        item.continuation.resume(throwing: LLMAccountSwitcherError.message(L10n.text("app_server_no_response")))
     }
 
     private func timeoutNotification(method: String) {
         guard var waiters = notificationWaiters.removeValue(forKey: method), !waiters.isEmpty else { return }
         let first = waiters.removeFirst()
         if !waiters.isEmpty { notificationWaiters[method] = waiters }
-        first.continuation.resume(throwing: CodexAccountManagerError.message(L10n.text("login_timeout")))
+        first.continuation.resume(throwing: LLMAccountSwitcherError.message(L10n.text("login_timeout")))
     }
 
     private func processExited(code: Int32) {
         logger.info("Codex app-server thoát, mã \(code)")
-        cleanup(error: CodexAccountManagerError.message(L10n.text("app_server_exited")))
+        cleanup(error: LLMAccountSwitcherError.message(L10n.text("app_server_exited")))
     }
 
     private func cleanup(error: Error) {

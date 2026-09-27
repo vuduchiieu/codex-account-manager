@@ -2,11 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleExecutable</key><string>codex-account-manager</string>
-    <key>CFBundleIdentifier</key><string>com.example.codex-account-manager</string>
-    <key>CFBundleIconFile</key><string>codex-account-manager-icon</string>
-    <key>CFBundleName</key><string>Codex Account Manager</string>
-    <key>CFBundleDisplayName</key><string>Codex Account Manager</string>
+    <key>CFBundleExecutable</key><string>llm-account-switcher</string>
+    <key>CFBundleIdentifier</key><string>com.example.llm-account-switcher</string>
+    <key>CFBundleIconFile</key><string>llm-account-switcher-icon</string>
+    <key>CFBundleName</key><string>LLM Account Switcher</string>
+    <key>CFBundleDisplayName</key><string>LLM Account Switcher</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleDevelopmentRegion</key><string>en</string>
     <key>CFBundleLocalizations</key>

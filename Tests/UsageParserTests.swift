@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import CodexAccountManager
+@testable import LLMAccountSwitcher
 
 struct UsageParserTests {
     private func window(_ used: Double, _ duration: Int) -> JSONValue {

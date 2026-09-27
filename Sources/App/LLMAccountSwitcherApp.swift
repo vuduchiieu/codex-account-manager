@@ -2,13 +2,13 @@ import AppKit
 import SwiftUI
 
 @main @MainActor
-final class CodexAccountManagerApp: NSObject, NSApplicationDelegate {
+final class LLMAccountSwitcherApp: NSObject, NSApplicationDelegate {
     private let model = AppModel()
     private var statusBarController: StatusBarController?
 
     static func main() {
         let application = NSApplication.shared
-        let delegate = CodexAccountManagerApp()
+        let delegate = LLMAccountSwitcherApp()
         application.delegate = delegate
         application.setActivationPolicy(.accessory)
         application.run()
@@ -25,23 +25,25 @@ final class StatusBarController: NSObject {
     private let statusItem: NSStatusItem
     private let popover = NSPopover()
     private let settingsWindowController: SettingsWindowController
+    private let onboardingWindowController: OnboardingWindowController
     private var outsideClickMonitor: Any?
 
     init(model: AppModel) {
         self.model = model
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         settingsWindowController = SettingsWindowController(model: model)
+        onboardingWindowController = OnboardingWindowController(model: model)
         super.init()
 
         if let button = statusItem.button {
-            let image = Bundle.main.url(forResource: "codex-account-manager-status-icon", withExtension: "svg")
+            let image = Bundle.main.url(forResource: "llm-account-switcher-status-icon", withExtension: "svg")
                 .flatMap(NSImage.init(contentsOf:))
-                ?? NSImage(systemSymbolName: "person.2.fill", accessibilityDescription: "Codex Account Manager")
+                ?? NSImage(systemSymbolName: "person.2.fill", accessibilityDescription: "LLM Account Switcher")
             image?.isTemplate = true
             image?.size = NSSize(width: 18, height: 18)
             button.image = image
             button.imageScaling = .scaleProportionallyDown
-            button.toolTip = "Codex Account Manager"
+            button.toolTip = "LLM Account Switcher"
             button.target = self
             button.action = #selector(handleStatusItemClick)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -49,16 +51,31 @@ final class StatusBarController: NSObject {
 
         let hostingController = NSHostingController(rootView: MenuBarContentView(
             model: model,
-            onOpenSettings: { [weak self] in self?.openSettings() }
+            onOpenSettings: { [weak self] in self?.openSettings() },
+            onOpenAccountSettings: { [weak self] in self?.openAccountSettings() }
         ))
         hostingController.sizingOptions = [.preferredContentSize]
         popover.contentViewController = hostingController
         popover.behavior = .transient
         popover.animates = true
         popover.delegate = self
+
+        Task { [weak self] in
+            guard let self else { return }
+            while self.model.isLoading {
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+            if self.model.needsOnboarding {
+                self.onboardingWindowController.show()
+            }
+        }
     }
 
     @objc private func handleStatusItemClick() {
+        if model.needsOnboarding {
+            onboardingWindowController.show()
+            return
+        }
         guard let button = statusItem.button else { return }
         if let event = NSApp.currentEvent, event.type == .rightMouseUp {
             popover.performClose(nil)
@@ -88,11 +105,10 @@ final class StatusBarController: NSObject {
     }
 
     private func showQuickActions() {
-        let menu = NSMenu(title: "Codex Account Manager")
+        let menu = NSMenu(title: "LLM Account Switcher")
         menu.autoenablesItems = false
         menu.font = NSFont.menuFont(ofSize: 12)
-        menu.addItem(menuItem(L10n.text("add_account"), action: #selector(addAccount), enabled: canAddAccount))
-        menu.addItem(menuItem(L10n.text("import_current"), action: #selector(importCurrentAccount), enabled: canImportAccount))
+        menu.addItem(menuItem(L10n.text("add_account"), action: #selector(showAccountSettings), enabled: true))
         if model.state.codexBinaryPath == nil {
             menu.addItem(menuItem(L10n.text("choose_binary"), action: #selector(chooseBinary), enabled: true))
         }
@@ -112,23 +128,27 @@ final class StatusBarController: NSObject {
         return item
     }
 
-    private var canAddAccount: Bool {
-        model.state.codexBinaryPath != nil && !model.isAddingAccount
-    }
-
-    private var canImportAccount: Bool {
-        model.state.codexBinaryPath != nil && model.canImportCurrentAccount && !model.isImportingAccount
-    }
-
-    @objc private func addAccount() { model.addAccount() }
-    @objc private func importCurrentAccount() { model.importCurrentAccount() }
+    @objc private func showAccountSettings() { openAccountSettings() }
     @objc private func chooseBinary() { model.chooseBinary() }
     @objc private func showSettings() { openSettings() }
     @objc private func quit() { model.shutdownAndQuit() }
 
     private func openSettings() {
+        guard !model.needsOnboarding else {
+            onboardingWindowController.show()
+            return
+        }
         popover.performClose(nil)
         settingsWindowController.show()
+    }
+
+    private func openAccountSettings() {
+        guard !model.needsOnboarding else {
+            onboardingWindowController.show()
+            return
+        }
+        popover.performClose(nil)
+        settingsWindowController.showAccounts()
     }
 }
 

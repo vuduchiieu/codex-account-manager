@@ -2,14 +2,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "codex-account-manager",
+    name: "llm-account-switcher",
     platforms: [.macOS(.v14)],
-    products: [.executable(name: "codex-account-manager", targets: ["CodexAccountManager"])],
+    products: [.executable(name: "llm-account-switcher", targets: ["LLMAccountSwitcher"])],
     targets: [
-        .executableTarget(name: "CodexAccountManager", path: "Sources"),
+        .executableTarget(name: "LLMAccountSwitcher", path: "Sources"),
         .testTarget(
-            name: "CodexAccountManagerTests",
-            dependencies: ["CodexAccountManager"],
+            name: "LLMAccountSwitcherTests",
+            dependencies: ["LLMAccountSwitcher"],
             path: "Tests",
             resources: [.copy("Fixtures")]
         ),

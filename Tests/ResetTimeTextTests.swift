@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import CodexAccountManager
+@testable import LLMAccountSwitcher
 
 struct ResetTimeTextTests {
     private let now = Date(timeIntervalSince1970: 0)

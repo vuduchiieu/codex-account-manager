@@ -8,7 +8,7 @@ actor AccountSwitchService {
     private let defaultCodexHome: URL
     private let verifier: Verifier
     private let fileManager: FileManager
-    private let logger = Logger(subsystem: "local.codex-account-manager.app", category: "switch")
+    private let logger = Logger(subsystem: "local.llm-account-switcher.app", category: "switch")
 
     init(store: AccountStore, defaultCodexHome: URL? = nil, fileManager: FileManager = .default, verifier: @escaping Verifier) {
         self.store = store
@@ -21,20 +21,27 @@ actor AccountSwitchService {
         let defaultAuth = defaultCodexHome.appendingPathComponent("auth.json")
         let targetAuth = await store.profileURL(named: target.profileDirectoryName).appendingPathComponent("auth.json")
         guard fileManager.fileExists(atPath: targetAuth.path) else {
-            throw CodexAccountManagerError.message(L10n.text("target_auth_missing"))
+            throw LLMAccountSwitcherError.message(L10n.text("target_auth_missing"))
         }
         try fileManager.createDirectory(at: defaultCodexHome, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
 
         if let current, fileManager.fileExists(atPath: defaultAuth.path) {
             let identity = try await verifier(nil)
             guard identitiesMatch(identity.email, current.email) else {
-                throw CodexAccountManagerError.message(L10n.text("external_active_error"))
+                throw LLMAccountSwitcherError.message(L10n.text("external_active_error"))
             }
             let currentAuth = await store.profileURL(named: current.profileDirectoryName).appendingPathComponent("auth.json")
             try await store.copyCredential(from: defaultAuth, to: currentAuth)
         }
 
-        let backup = await store.backupsDirectory.appendingPathComponent("pre-codex-account-manager-auth.json")
+        // Verify and refresh the destination profile before replacing the active auth file.
+        // This prevents a stale profile from momentarily becoming the user's default account.
+        let targetIdentity = try await verifier(targetAuth.deletingLastPathComponent())
+        guard identitiesMatch(targetIdentity.email, target.email) else {
+            throw LLMAccountSwitcherError.message(L10n.text("switch_verify_mismatch"))
+        }
+
+        let backup = await store.backupsDirectory.appendingPathComponent("pre-llm-account-switcher-codex-auth.json")
         if fileManager.fileExists(atPath: defaultAuth.path), !fileManager.fileExists(atPath: backup.path) {
             try await store.copyCredential(from: defaultAuth, to: backup)
         }
@@ -43,8 +50,11 @@ actor AccountSwitchService {
             try await store.copyCredential(from: targetAuth, to: defaultAuth)
             let identity = try await verifier(nil)
             guard identitiesMatch(identity.email, target.email) else {
-                throw CodexAccountManagerError.message(L10n.text("switch_verify_mismatch"))
+                throw LLMAccountSwitcherError.message(L10n.text("switch_verify_mismatch"))
             }
+            // Codex may renew the access token while verifying. Keep the managed
+            // profile in sync with the renewed default credentials.
+            try await store.copyCredential(from: defaultAuth, to: targetAuth)
             logger.info("Chuyển tài khoản thành công: \(target.id.uuidString, privacy: .public)")
             return try? defaultAuth.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
         } catch {

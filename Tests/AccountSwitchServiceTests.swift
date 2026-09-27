@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import CodexAccountManager
+@testable import LLMAccountSwitcher
 
 struct AccountSwitchServiceTests {
     @Test func switchesAndBacksUpAtomically() async throws {
@@ -14,8 +14,9 @@ struct AccountSwitchServiceTests {
         try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
         try Data("original".utf8).write(to: home.appendingPathComponent("auth.json"))
         let authURL = home.appendingPathComponent("auth.json")
-        let switcher = AccountSwitchService(store: store, defaultCodexHome: home) { _ in
-            let value = String(data: try Data(contentsOf: authURL), encoding: .utf8)
+        let switcher = AccountSwitchService(store: store, defaultCodexHome: home) { profile in
+            let source = profile?.appendingPathComponent("auth.json") ?? authURL
+            let value = String(data: try Data(contentsOf: source), encoding: .utf8)
             return RemoteAccount(email: value == "target" ? "target@example.com" : "original@example.com", plan: nil, accountType: "chatgpt")
         }
         let target = CodexAccount(id: id, displayName: "Target", email: "target@example.com", rawPlan: nil,
@@ -23,7 +24,7 @@ struct AccountSwitchServiceTests {
                                   lastRefreshAt: nil, lastSuccessfulRefreshAt: nil, lastError: nil)
         _ = try await switcher.switchAccount(from: nil, to: target)
         #expect(String(data: try Data(contentsOf: authURL), encoding: .utf8) == "target")
-        let backup = await store.backupsDirectory.appendingPathComponent("pre-codex-account-manager-auth.json")
+        let backup = await store.backupsDirectory.appendingPathComponent("pre-llm-account-switcher-codex-auth.json")
         #expect(String(data: try Data(contentsOf: backup), encoding: .utf8) == "original")
     }
 

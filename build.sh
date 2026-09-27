@@ -4,21 +4,21 @@ set -euo pipefail
 ROOT_DIR="${0:A:h}"
 CONFIGURATION="${1:-debug}"
 
-BUNDLE_IDENTIFIER="${BUNDLE_IDENTIFIER:-com.example.codex-account-manager}"
+BUNDLE_IDENTIFIER="${BUNDLE_IDENTIFIER:-com.example.llm-account-switcher}"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:--}"
 
 swift build --package-path "$ROOT_DIR" -c "$CONFIGURATION"
 
 BIN_DIR="$(swift build --package-path "$ROOT_DIR" -c "$CONFIGURATION" --show-bin-path)"
-APP_DIR="$ROOT_DIR/.build/codex-account-manager.app"
+APP_DIR="$ROOT_DIR/.build/llm-account-switcher.app"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
-cp "$BIN_DIR/codex-account-manager" "$APP_DIR/Contents/MacOS/codex-account-manager"
+cp "$BIN_DIR/llm-account-switcher" "$APP_DIR/Contents/MacOS/llm-account-switcher"
 cp "$ROOT_DIR/Resources/Info.plist" "$APP_DIR/Contents/Info.plist"
 plutil -replace CFBundleIdentifier -string "$BUNDLE_IDENTIFIER" "$APP_DIR/Contents/Info.plist"
-cp "$ROOT_DIR/Resources/codex-account-manager-icon.icns" "$APP_DIR/Contents/Resources/codex-account-manager-icon.icns"
-cp "$ROOT_DIR/Resources/codex-account-manager-icon.png" "$APP_DIR/Contents/Resources/codex-account-manager-icon.png"
-cp "$ROOT_DIR/Resources/codex-account-manager-status-icon.svg" "$APP_DIR/Contents/Resources/codex-account-manager-status-icon.svg"
-chmod +x "$APP_DIR/Contents/MacOS/codex-account-manager"
+cp "$ROOT_DIR/Resources/llm-account-switcher-icon.icns" "$APP_DIR/Contents/Resources/llm-account-switcher-icon.icns"
+cp "$ROOT_DIR/Resources/llm-account-switcher-icon.png" "$APP_DIR/Contents/Resources/llm-account-switcher-icon.png"
+cp "$ROOT_DIR/Resources/llm-account-switcher-status-icon.svg" "$APP_DIR/Contents/Resources/llm-account-switcher-status-icon.svg"
+chmod +x "$APP_DIR/Contents/MacOS/llm-account-switcher"
 
 if [[ "$SIGNING_IDENTITY" != "-" ]]; then
     codesign --force --deep --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP_DIR"

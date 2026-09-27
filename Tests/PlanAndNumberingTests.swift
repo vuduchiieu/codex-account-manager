@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import CodexAccountManager
+@testable import LLMAccountSwitcher
 
 struct PlanAndNumberingTests {
     @Test func mapsKnownAndFuturePlans() {

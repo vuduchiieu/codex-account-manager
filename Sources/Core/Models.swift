@@ -94,6 +94,73 @@ struct CodexAccount: Codable, Identifiable, Equatable, Sendable {
     }
 }
 
+struct ClaudeAccount: Codable, Identifiable, Equatable, Sendable {
+    let id: UUID
+    var displayName: String
+    var email: String?
+    var rawPlan: String?
+    var authMethod: String?
+    var profileDirectoryName: String
+    var usesDefaultProfile: Bool
+    var isActive: Bool
+    var lastRefreshAt: Date?
+
+    var planDisplayName: String {
+        guard let rawPlan = rawPlan?.trimmingCharacters(in: .whitespacesAndNewlines), !rawPlan.isEmpty else {
+            return "CLAUDE"
+        }
+        return rawPlan.replacingOccurrences(of: "_", with: " ").uppercased()
+    }
+}
+
+struct CursorAccount: Codable, Identifiable, Equatable, Sendable {
+    let id: UUID
+    var displayName: String
+    var email: String?
+    var rawPlan: String?
+    var profileDirectoryName: String
+    var usesDefaultProfile: Bool
+    var usesFileCredentialStore: Bool
+    var isActive: Bool
+    var lastRefreshAt: Date?
+
+    var planDisplayName: String {
+        guard let rawPlan = rawPlan?.trimmingCharacters(in: .whitespacesAndNewlines), !rawPlan.isEmpty else {
+            return "CURSOR"
+        }
+        return rawPlan.replacingOccurrences(of: "_", with: " ").uppercased()
+    }
+}
+
+struct AntigravityAccount: Codable, Identifiable, Equatable, Sendable {
+    let id: UUID
+    var displayName: String
+    var email: String?
+    var rawPlan: String?
+    var credentialKey: String
+    var credentialFingerprint: String
+    var isActive: Bool
+    var lastRefreshAt: Date?
+
+    var planDisplayName: String {
+        guard let rawPlan = rawPlan?.trimmingCharacters(in: .whitespacesAndNewlines), !rawPlan.isEmpty else {
+            return "ANTIGRAVITY"
+        }
+        return rawPlan.replacingOccurrences(of: "_", with: " ").uppercased()
+    }
+}
+
+struct CopilotAccount: Codable, Identifiable, Equatable, Sendable {
+    let id: UUID
+    var displayName: String
+    var login: String
+    var host: String
+    var isActive: Bool
+    var lastRefreshAt: Date?
+
+    var planDisplayName: String { "GITHUB COPILOT" }
+}
+
 struct AppState: Codable, Equatable, Sendable {
     var schemaVersion = 1
     var activeAccountId: UUID?
@@ -104,9 +171,18 @@ struct AppState: Codable, Equatable, Sendable {
     var quotaResetNotificationsEnabled: Bool?
     var languageOverride: AppLanguage?
     var defaultAuthModificationDate: Date?
+    var activeClaudeAccountId: UUID?
+    var claudeBinaryPath: String?
+    var activeCursorAccountId: UUID?
+    var cursorBinaryPath: String?
+    var activeAntigravityAccountId: UUID?
+    var antigravityBinaryPath: String?
+    var activeCopilotAccountId: UUID?
+    var copilotBinaryPath: String?
+    var onboardingCompleted: Bool?
 }
 
-enum CodexAccountManagerError: LocalizedError, Equatable {
+enum LLMAccountSwitcherError: LocalizedError, Equatable {
     case message(String)
     var errorDescription: String? {
         switch self { case .message(let value): value }

@@ -41,6 +41,7 @@ final class SettingsWindowController {
 private enum SettingsSection: String, CaseIterable, Identifiable {
     case accounts
     case general
+    case about
 
     var id: Self { self }
 
@@ -48,6 +49,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         switch self {
         case .accounts: "person.2"
         case .general: "gearshape"
+        case .about: "info.circle"
         }
     }
 
@@ -56,6 +58,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         switch self {
         case .accounts: localization.text("accounts")
         case .general: localization.text("general")
+        case .about: localization.text("about")
         }
     }
 }
@@ -126,10 +129,89 @@ private struct SettingsWindowView: View {
                     AccountManagementSettingsView(model: model)
                 case .general:
                     GeneralSettingsView(model: model)
+                case .about:
+                    AboutSettingsView()
                 }
             }
         }
         .navigationSplitViewStyle(.balanced)
+    }
+}
+
+private struct AboutSettingsView: View {
+    @State private var localization = LocalizationManager.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Text(localization.text("about"))
+                .font(.largeTitle.weight(.bold))
+
+            VStack(spacing: 16) {
+                Image(nsImage: appIcon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 96, height: 96)
+
+                VStack(spacing: 5) {
+                    Text("Codex Account Manager")
+                        .font(.title2.weight(.bold))
+                    Text(localization.format("app_version", version))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Text(localization.text("app_description"))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: 420)
+
+                Text(localization.text("community_disclaimer"))
+                    .font(.caption)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: 420)
+
+                SettingsActionButton(
+                    title: "GitHub",
+                    icon: "link",
+                    isDisabled: false,
+                    action: openGitHub
+                )
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 28)
+            .padding(.horizontal, 24)
+            .background(
+                Color(nsColor: .controlBackgroundColor),
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color(nsColor: .separatorColor).opacity(0.6), lineWidth: 0.5)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 28)
+        .padding(.top, 48)
+        .padding(.bottom, 24)
+    }
+
+    private var version: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+    }
+
+    private var appIcon: NSImage {
+        guard let url = Bundle.main.url(forResource: "codex-account-manager-icon", withExtension: "icns"),
+              let image = NSImage(contentsOf: url) else {
+            return NSApp.applicationIconImage
+        }
+        return image
+    }
+
+    private func openGitHub() {
+        guard let url = URL(string: "https://github.com/vuduchiieu/codex-account-manager") else { return }
+        NSWorkspace.shared.open(url)
     }
 }
 

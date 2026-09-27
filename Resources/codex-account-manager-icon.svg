@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="tile" x1="110" y1="70" x2="402" y2="450" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#283246"/>
-      <stop offset="0.55" stop-color="#141B2A"/>
-      <stop offset="1" stop-color="#090E18"/>
+      <stop offset="0" stop-color="#409CFF"/>
+      <stop offset="0.55" stop-color="#0A84FF"/>
+      <stop offset="1" stop-color="#007AFF"/>
     </linearGradient>
     <linearGradient id="mark" x1="150" y1="145" x2="365" y2="365" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFFFFF"/>
@@ -11,7 +11,7 @@
     </linearGradient>
   </defs>
   <rect x="32" y="32" width="448" height="448" rx="108" fill="url(#tile)"/>
-  <rect x="35" y="35" width="442" height="442" rx="105" fill="none" stroke="#71809B" stroke-opacity="0.55" stroke-width="6"/>
+  <rect x="35" y="35" width="442" height="442" rx="105" fill="none" stroke="#B9DCFF" stroke-opacity="0.65" stroke-width="6"/>
   <path d="M162 154L278 256L162 358" fill="none" stroke="url(#mark)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M304 358H390" fill="none" stroke="url(#mark)" stroke-width="48" stroke-linecap="round"/>
 </svg>
